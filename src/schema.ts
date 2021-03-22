@@ -3,7 +3,11 @@ import flatMap from 'lodash.flatmap';
 import fromPairs from 'lodash.frompairs';
 import isPlainObject from 'lodash.isplainobject';
 import partition from 'lodash.partition';
-import { RecursionError, SchemaCompileError } from './errors';
+import {
+  AmbiguousPathError,
+  RecursionError,
+  SchemaCompileError,
+} from './errors';
 import { Path, PathArray } from './path';
 import { Source } from './source';
 
@@ -35,17 +39,27 @@ export abstract class Schema<T> {
   abstract toSource(): Source;
   abstract child(index: string | number): Schema<unknown> | undefined;
   abstract isRecursive(): boolean;
+  abstract hasFixedShape(): boolean;
 
   atPath(path: Path): Schema<unknown> | undefined {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     let s: Schema<unknown> | undefined = this;
-    for (const i of path) {
-      if (!s) {
-        break;
+    const pathSoFar: (string | number)[] = [];
+    try {
+      for (const i of path) {
+        if (!s) {
+          break;
+        }
+        pathSoFar.push(i);
+        s = s.child(i);
       }
-      s = s.child(i);
+      return s;
+    } catch (e) {
+      if (e instanceof AmbiguousPathError) {
+        throw new AmbiguousPathError(pathSoFar);
+      }
+      throw e;
     }
-    return s;
   }
 
   isScalar(): this is ScalarType<T> {
@@ -74,6 +88,10 @@ export abstract class ScalarType<T> extends Schema<T> {
 
   isRecursive(): boolean {
     return false;
+  }
+
+  hasFixedShape(): boolean {
+    return true;
   }
 }
 
@@ -362,14 +380,8 @@ export class NullType extends ScalarType<null> {
   }
 }
 
-export class OneOfType extends ScalarType<
-  string | number | boolean | null | Uint8Array | Date
-> {
-  constructor(
-    public readonly subtypes: readonly ScalarType<
-      string | number | boolean | null | Uint8Array | Date
-    >[]
-  ) {
+export class OneOfType<T> extends Schema<T> {
+  constructor(public readonly subtypes: readonly Schema<T>[]) {
     super();
   }
 
@@ -383,10 +395,22 @@ export class OneOfType extends ScalarType<
       : [{ type: this, value, path: options.path ?? [] }];
   }
 
-  restrict(
-    value: unknown,
-    options: RestrictOptions = {}
-  ): string | number | boolean | null | Uint8Array | Date | undefined {
+  child(path: string | number): undefined {
+    if (this.hasFixedShape()) {
+      return undefined;
+    }
+    throw new AmbiguousPathError([path]);
+  }
+
+  isRecursive(): boolean {
+    return this.subtypes.some((t) => t.isRecursive());
+  }
+
+  hasFixedShape(): boolean {
+    return this.subtypes.every((t) => t.isScalar() && t.hasFixedShape());
+  }
+
+  restrict(value: unknown, options: RestrictOptions = {}): T | undefined {
     for (const t of this.subtypes) {
       const restricted = t.restrict(value, {});
       if (restricted !== undefined) {
@@ -404,10 +428,15 @@ export class OneOfType extends ScalarType<
     if (options.fillZero) {
       return this.zeroValue();
     }
+    if (options.fillEmpty && !this.hasFixedShape()) {
+      return this.subtypes
+        .map((t) => t.restrict(value, options))
+        .find((r) => Array.isArray(r) || isObject(r));
+    }
     return undefined;
   }
 
-  zeroValue(): string | number | boolean | null | Uint8Array | Date {
+  zeroValue(): T {
     return this.subtypes[0].zeroValue();
   }
 }
@@ -480,6 +509,10 @@ export class ArrayType<T> extends Schema<T[]> {
     return this.elementType.isRecursive();
   }
 
+  hasFixedShape(): boolean {
+    return this.elementType.hasFixedShape();
+  }
+
   restrict(value: unknown, options: RestrictOptions = {}): T[] | undefined {
     if (Array.isArray(value)) {
       return value
@@ -525,6 +558,10 @@ export class DictionaryType<T> extends Schema<{ [key: string]: T }> {
 
   isRecursive(): boolean {
     return this.valueType.isRecursive();
+  }
+
+  hasFixedShape(): boolean {
+    return this.valueType.hasFixedShape();
   }
 
   restrict(
@@ -590,6 +627,10 @@ export class ObjectType extends Schema<object> {
     return Object.values(this.entries).some((e) => e.isRecursive());
   }
 
+  hasFixedShape(): boolean {
+    return Object.values(this.entries).every((e) => e.hasFixedShape());
+  }
+
   restrict(value: unknown, options: RestrictOptions = {}): object | undefined {
     if (!isObject(value) && !options.fillZero && !options.fillEmpty) {
       return undefined;
@@ -606,6 +647,41 @@ export class ObjectType extends Schema<object> {
     return fromPairs(
       Object.entries(this.entries).map(([k, v]) => [k, v.zeroValue()])
     );
+  }
+}
+
+export class AnyType extends Schema<any> {
+  static readonly self = new AnyType();
+  private constructor() {
+    super();
+  }
+
+  toSource(): 'any' {
+    return 'any';
+  }
+
+  validate(): never[] {
+    return [];
+  }
+
+  child(path: string | number): undefined {
+    throw new AmbiguousPathError([path]);
+  }
+
+  isRecursive(): boolean {
+    return false;
+  }
+
+  hasFixedShape(): boolean {
+    return false;
+  }
+
+  restrict(value: unknown): unknown {
+    return value;
+  }
+
+  zeroValue(): null {
+    return null;
   }
 }
 
@@ -646,6 +722,11 @@ class FixpointType extends Schema<unknown> {
 
   isRecursive(): boolean {
     return true;
+  }
+
+  hasFixedShape(): boolean {
+    assert(this.schema);
+    return this.schema.hasFixedShape();
   }
 
   restrict(value: unknown, options: RestrictOptions = {}): unknown {
@@ -715,16 +796,9 @@ export function compileSchema(
       switch (source[0]) {
         case 'oneof':
           return new OneOfType(
-            (source as Source[]).slice(1).map((s, i) => {
-              const result = compileSchema(s, [...path, i + 1], scope);
-              if (!result.isScalar()) {
-                throw new SchemaCompileError(
-                  'oneof entries must be scalar types',
-                  [...path, i + 1]
-                );
-              }
-              return result as ScalarType<any>;
-            })
+            (source as Source[])
+              .slice(1)
+              .map((s, i) => compileSchema(s, [...path, i + 1], scope))
           );
         case 'enum':
           return new EnumType(
@@ -780,6 +854,8 @@ export function compileSchema(
       return BooleanType.self;
     case 'null':
       return NullType.self;
+    case 'any':
+      return AnyType.self;
   }
   if (typeof source === 'string') {
     if (source.startsWith('$') && !source.startsWith('$$')) {

@@ -3,6 +3,8 @@ export type Source =
   | SourceObject
   | SourceArray
   | SourceDictionary
+  | SourceOneOf
+  | 'any'
   | string;
 export interface SourceObject {
   readonly [key: string]: Source;
@@ -15,7 +17,6 @@ export interface SourceDictionary extends ReadonlyArray<Source> {
   readonly [1]: Source;
 }
 export type SourceScalar =
-  | SourceOneOf
   | SourceEnum
   | 'string'
   | 'integer'

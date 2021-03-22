@@ -35,17 +35,13 @@ design decisions. Any usefulness in other contexts is just a nice bonus.
 ## The Schema Language
 
 - Scalar types: `"string"`, `"integer"`, `"float"`, `"binary"`, `"date"`,
-  `"boolean"`, `null`, `["oneof", …]`, `["enum", …]`.
-  - `"oneof"` takes a list of scalar types:
-    ```json
-    ["oneof", "integer", "string"]
-    ```
+  `"boolean"`, `null`, `["enum", …]`.
   - `"enum"` takes a list of scalar values (strings, numbers, `true`, `false`,
     `null`):
     ```json
     ["enum", "foo", "bar", "baz"]
     ```
-- Composite types: objects, arrays, `["dictionary", …]`
+- Composite types: objects, arrays, `["dictionary", …]`, `["oneof", …]`, `any`.
   - An object type is an object that maps keys to types. All keys are optional.
     ```json
     { "name": "string", "age": "integer" }
@@ -59,6 +55,11 @@ design decisions. Any usefulness in other contexts is just a nice bonus.
     ```json
     ["dictionary", "integer"]
     ```
+  - `"oneof"` takes a list of types, and matches any of them:
+    ```json
+    ["oneof", "integer", "string"]
+    ```
+  - `"any"` matches anything.
 - Labels and references
   - `$` at the start of a key is a reserved character. It can be escaped as
     `$$`.
@@ -76,21 +77,6 @@ design decisions. Any usefulness in other contexts is just a nice bonus.
     ```
 
 …and that's it. That's the whole language.
-
-## Limitations
-
-- All fields are optional. Spartan Schema does not support required fields.
-- With the exception of `"enum"`, Spartan Schema cannot restrict the values
-  within a type.
-- A type must be *only one of* an object, an array, or a scalar. Spartan Schema
-  does not allow union types (`"oneof"`) to mix these categories of types. This
-  makes some JSON languages inexpressible--notably, Spartan Schema cannot
-  describe itself.
-- Using the scalar types `"binary"`, `"date"`, or `"null"` limits the languages
-  that a Spartan Schema can describe:
-    - `"binary"` is not available in JSON or TOML.
-    - `"date"` is not available in JSON.
-    - `null` is not available in TOML.
 
 ## Comparison to JSON Schema
 
@@ -286,11 +272,12 @@ Returns the *zero value* of this schema type.
 | string         | `""`                                         |
 | binary         | `0`-length `Uint8Array`                      |
 | date           | `new Date(0)` (Jan 1, 1970)                  |
-| `oneof`        | zero value of first type                     |
 | `enum`         | first enum value                             |
 | array          | `[]`                                         |
-| `dictionary`   | `{}`                                         |
 | object         | object populated with all keys' zero values  |
+| `dictionary`   | `{}`                                         |
+| `oneof`        | zero value of first type                     |
+| `any`          | `null`                                       |
 
 Can throw a `RecursionError` if called on a recursive object type.
 
@@ -299,6 +286,9 @@ Can throw a `RecursionError` if called on a recursive object type.
 Given a `path` array consisting of strings and numbers (object keys and array
 indexes), returns a `Schema` representing the type at that path in this schema.
 Returns `undefined` if the path is not valid in this schema.
+
+Can throw an `AmbiguousPathError` if called on a schema without a fixed shape
+(see `hasFixedShape`).
 
 #### method `toSource()`
 
@@ -325,9 +315,35 @@ Returns `true` if this schema is an object or `dictionary` type.
 Returns `true` if this schema contains recursive references that could cause
 `zeroValue` to fail.
 
-### exception `SchemaCompileError`
+### method `hasFixedShape()`
 
-Thrown when `compileSchema` fails to compile its input.
+Returns `true` if this schema meets the condition that *every typed location
+must be **only one of** a scalar, an array, or an object*.
+
+In a schema with a fixed shape, `atPath` can know with certainty whether a given
+path is valid or invalid, and can always return a type or `undefined`.
+
+This will return `false` if the schema contains:
+
+- a `oneof` containing an array, an object, or a `dictionary`, or
+- the type `any`.
+
+### exception `AmbiguousPathError`
+
+Thrown when `atPath` is called on a path that is valid for some—but not all—JSON
+values that match a schema. For example:
+
+```json
+{
+  "foo": ["oneof", ["string"], { "bar": "integer" }]
+}
+```
+
+What is the type of `["foo", 0]` in this schema? It could be `"string"`, but it
+could also be `undefined` if `foo` is an object. When faced with this ambiguity,
+Spartan Schema throws an exception.
+
+`hasFixedShape` checks whether your schema is safe from these ambiguities.
 
 ### exception `RecursionError`
 
@@ -335,6 +351,10 @@ Thrown when  `zeroValue` is called on a recursive schema, or when `restrict` is
 called with the options `fillEmpty: true` or `fillZero: true` on a recursive
 schema. This would produce an infinitely nested object, so it throws an
 exception instead.
+
+### exception `SchemaCompileError`
+
+Thrown when `compileSchema` fails to compile its input.
 
 ## License
 
