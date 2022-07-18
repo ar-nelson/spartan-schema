@@ -1,7 +1,6 @@
 src/
 test/
-babel.config.json
-tsconfig.json
+.eslintignore
 .eslintrc.json
-.mocharc.json
-.prettierrc
+.prettierrc.js
+tsconfig.json

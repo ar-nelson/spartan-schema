@@ -1,28 +1,3 @@
 {
-    "root": true,
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-        "ecmaVersion": 6,
-        "sourceType": "module"
-    },
-    "plugins": [
-        "@typescript-eslint"
-    ],
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/eslint-recommended",
-      "plugin:@typescript-eslint/recommended"
-    ],
-    "rules": {
-        "@typescript-eslint/semi": "off",
-        "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/ban-types": "off",
-        "@typescript-eslint/ban-ts-comment": "off",
-        "@typescript-eslint/no-empty-interface": "off",
-        "curly": "warn",
-        "eqeqeq": ["warn", "smart"],
-        "no-throw-literal": "off",
-        "semi": ["warn", "always"],
-        "indent": "off"
-    }
+  "extends": "./node_modules/gts/"
 }

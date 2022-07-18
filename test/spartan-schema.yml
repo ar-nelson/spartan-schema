@@ -1,0 +1,22 @@
+# Spartan Schema in Spartan Schema (in YAML)
+# This schema defines the Spartan Schema language itself
+spartan: 1
+let:
+  EnumValue: [oneof, null, boolean, number, string]
+  Type:
+  - oneof
+  - [enum, null, 'null', boolean, integer, float, number, string, date, binary]
+  - [array, [enum, enum], [ref, EnumValue], [ref, EnumValue]]
+  - [array, [enum, oneof], [ref, Type], [ref, Type]]
+  - [array, [enum, tuple], [ref, Type], [ref, Type]]
+  - [array, [enum, array], [ref, Type], [ref, Type]]
+  - [tuple, [enum, dictionary], [ref, Type]]
+  - [tuple, [enum, ref], string]
+  - - dictionary
+    - - oneof
+      - [tuple, [enum, optional], [ref, Type]]
+      - [ref, Type]
+schema:
+  spartan: [optional, [enum, 1]]
+  let: [optional, [dictionary, [ref, Type]]]
+  schema: [ref, Type]

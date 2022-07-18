@@ -1,87 +1,156 @@
 # Spartan Schema
 
-An ultra-minimal JSON schema language for strongly-typed data. Much, much
-simpler than [JSON Schema][json-schema]. Just write the shape of your data, in
-a Typescript-like format, and it does what you expect.
+An ultra-minimal, Typescript-compatible alternative to [JSON
+Schema][json-schema], designed as part of [Osmosis][osmosis].
 
-```json
-{
-  "compilerOptions": {
-    "module": ["enum", "commonjs", "amd", "umd", "system", "es6"],
-    "noImplicitAny": "boolean",
-    "removeComments": "boolean",
-    "preserveConstEnums": "boolean",
-    "sourceMap": "boolean"
-  },
-  "files": ["string"],
-  "include": ["string"],
-  "exclude": ["string"]
-}
-```
+**Spartan Schema is...**
 
-*Example: A schema for a subset of [`tsconfig.json`][tsconfig]. Fields not
-specified here are allowed, and will not be typechecked.*
+- **Clear**: Spartan Schemas are singificantly simpler than comparable JSON
+  schemas. Here's a schema that will match objects like
+  `{ name: { first: "Al", last: "Yankovic" }, age: 62 }`:
 
-Includes `binary` and `date` types, for formats that support them. Given
-a parser for the format, Spartan Schema can validate TOML, YAML, MessagePack,
-CBOR, and probably other formats too.
+   ```json
+   {
+     "schema": {
+       "name": {
+         "first": "string",
+         "middle": ["optional", "string"],
+         "last": "string"
+       },
+       "age": "integer"
+     }
+   }
+   ```
 
-Spartan Schema was designed as part of [Osmosis][osmosis], and that guided most
-design decisions. Any usefulness in other contexts is just a nice bonus.
+- **Compatible**: Spartan Schema includes `binary` and `date` types, for
+  languages like YAML and MessagePack that support more data types than JSON.
+  The parser expects a JavaScript object, which can be parsed from any JSON-like
+  format, or written directly in JS/TS source.
 
-> **Current status: alpha.** Although this is a very small library, it is not
-> thoroughly tested, so I don't recommend using it in production yet.
+- **Minimal**: The entire specification fits on a single page. Spartan Schema
+  can describe itself in 20 lines of YAML:
+
+   ```yaml
+   spartan: 1
+   let:
+     EnumValue: [oneof, null, boolean, number, string]
+     Type:
+     - oneof
+     - [enum, null, 'null', boolean, integer, float, number, string, date, binary]
+     - [array, [enum, enum], [ref, EnumValue], [ref, EnumValue]]
+     - [array, [enum, oneof], [ref, Type], [ref, Type]]
+     - [array, [enum, tuple], [ref, Type], [ref, Type]]
+     - [array, [enum, array], [ref, Type], [ref, Type]]
+     - [tuple, [enum, dictionary], [ref, Type]]
+     - [tuple, [enum, ref], string]
+     - - dictionary
+       - - oneof
+         - [tuple, [enum, optional], [ref, Type]]
+         - [ref, Type]
+   schema:
+     spartan: [optional, [enum, 1]]
+     let: [optional, [dictionary, [ref, Type]]]
+     schema: [ref, Type]
+   ```
+
+- **Statically typed**: Spartan Schema uses [Typescript 4.1 recursive
+  conditional types][types] to convert schemas into Typescript type definitions.
+  A schema written directly in source code can be a single source of truth for
+  both compile-time and runtime typechecking.
+
+   ```typescript
+   import { matchesSchema } from 'spartan-schema';
+
+   // Schemas should be defined with 'as const', for typechecking.
+   const personSchema = {
+     schema: {
+       name: {
+         first: 'string',
+         middle: ['optional', 'string'],
+         last: 'string'
+       },
+       age: 'integer'
+     }
+   } as const;
+
+   const isPerson = matchesSchema(personSchema);
+
+   function loadPerson(json: string) {
+     const data = JSON.parse(json);
+     if (!isPerson(data)) {
+       throw new Error("JSON data does not match schema");
+     }
+
+     // The type of `data` is now:
+     //
+     // { name: { first: string, middle?: string, last: string }, age: number }
+     //
+     // This type was derived from `personSchema`!
+
+     console.log(`Hello, ${data.name.first} ${data.name.last}!`);
+   }
+   ```
 
 ## The Schema Language
 
-- Scalar types: `"string"`, `"integer"`, `"float"`, `"binary"`, `"date"`,
-  `"boolean"`, `null`, `["enum", …]`.
-  - `"enum"` takes a list of scalar values (strings, numbers, `true`, `false`,
-    `null`):
-    ```json
-    ["enum", "foo", "bar", "baz"]
-    ```
-- Composite types: objects, arrays, `["dictionary", …]`, `["oneof", …]`, `any`.
-  - An object type is an object that maps keys to types. All keys are optional.
-    ```json
-    { "name": "string", "age": "integer" }
-    ```
-  - An array type is a one-element array containing another type.
-    ```json
-    ["integer"]
-    ```
-  - `"dictionary"` describes an object that may contain any keys, but all values
-    must be of the same type.
-    ```json
-    ["dictionary", "integer"]
-    ```
-  - `"oneof"` takes a list of types, and matches any of them:
-    ```json
-    ["oneof", "integer", "string"]
-    ```
-  - `"any"` matches anything.
-- Labels and references
-  - `$` at the start of a key is a reserved character. It can be escaped as
-    `$$`.
-  - A key starting with `$` defines a labeled type, which is in scope in its
-    containing object and all of that object's children.
-  - A string starting with `$` is a reference to an in-scope label.
-  - Example:
+### The Root Object
 
-    ```json
-    {
-      "$Numbers": ["integer"],
-      "foo": "$Numbers",
-      "bar": "$Numbers"
-    }
-    ```
+The root of a Spartan Schema is an object. This object must contain a `"schema"`
+property, and may optionally contain `"spartan"` and `"let"` properties. Other
+properties are allowed, and will be ignored.
 
-…and that's it. That's the whole language.
+- `"schema"`: The schema itself. A single schema type.
+- `"let"`: An object whose values are schema types. Its properties are defined
+  as *reference types*, which can be accessed with the `"ref"` directive type.
+  - For example, `{ "let": { "Foo": "string" }, { "schema": ["ref", "Foo"] } }`
+    is equivalent to `{ "schema": "string" }`.
+- `"spartan"`: The Spartan Schema major version of this schema. If present, it
+  must be `1`.
+
+### Schema Types
+
+- Primitive types: `"string"`, `"integer"`, `"float"`, `"number"`, `"binary"`, `"date"`,
+  `"boolean"`, `null`.
+  - `"float"` is an alias for `"number"`.
+  - `"null"` can also be written as the literal value `null`.
+- Object type: An object whose keys are schema types. Matches an object with
+  all of the included keys, if those keys' values match their schema types.
+  - Unspecified keys are allowed, and will not be checked.
+  - Keys are required by default. To make a key optional, use the directive type
+    `"optional"`: `{ "optionalKey": ["optional", <value type>] }`
+- Directive types: Arrays whose first element is a string. The string is the
+  *name* of the directive, and the rest of the array is the directive's
+  *arguments*.
+  - `"enum"` takes an argument list of primitive values (strings, numbers,
+    `true`, `false`, `null`) and matches only those exact values.
+  - `"oneof"` takes an argument list of schema types and matches anything that
+    matches at least one of those types.
+  - `"tuple"` takes an argument list of schema types and matches an array with
+    that exact length, with each element matching the argument at the same
+    index.
+  - `"array"` takes an argument list of schema types.
+    - If it has one argument, it matches an array of any length whose elements
+      all match that argument.
+    - If it has more than one argument, it behaves like `"tuple"` with
+      a variable-length suffix: given *N* arguments, `"array"` matches an array
+      with at least *N - 1* elements, where each of these elements matches the
+      argument of the same index, followed by 0 or more additional elements
+      which match the last argument.
+  - `"dictionary"` takes one schema type argument, and matches an object whose
+    values all match this argument.
+  - `"ref"` takes one string argument. Its argument must be a key in the root
+    object's `"let"` property. A `"ref"` is substituted with the value of the
+    `"let"` property that it names.
+    - Recursion is allowed, and `"ref"`s can be used inside of `"let"` to create
+      infinite types.
+  - `"optional"` is only allowed as a value of an object type. It takes one
+    schema type argument. It makes its key in the object type optional, with
+    its argument as the value type.
 
 ## Comparison to JSON Schema
 
-Spartan Schema is *much less verbose* than JSON Schema, but also less powerful.
-Sometimes, this is a worthwhile tradeoff.
+Spartan Schema is *much less verbose* than JSON Schema, but has more limited
+features.
 
 (Examples taken from https://json-schema.org/learn/miscellaneous-examples.html)
 
@@ -106,7 +175,7 @@ Sometimes, this is a worthwhile tradeoff.
       "description": "The person's last name."
     },
     "age": {
-      "description": "Age in years…",
+      "description": "Age in years.",
       "type": "integer",
       "minimum": 0
     }
@@ -118,14 +187,16 @@ Sometimes, this is a worthwhile tradeoff.
 
 ```json
 {
-  "firstName": "string",
-  "lastName": "string",
-  "age": "integer"
+  "schema": {
+    "firstName": "string",
+    "lastName": "string",
+    "age": "integer"
+  }
 }
 ```
 
-This schema is much shorter, but does not include field descriptions, and cannot
-specify a minimum for `age`.
+This schema is much shorter, but does not include names, URLs, or field
+descriptions, and cannot specify a minimum for `age`.
 
 </td></tr><tr><td>
 
@@ -169,196 +240,100 @@ specify a minimum for `age`.
 
 ```json
 {
-  "fruits": ["string"],
-  "vegetables": ["$Veggie"],
-  "$Veggie": {
-    "veggieName": "string",
-    "veggieLike": "boolean"
+  "let": {
+    "Veggie": {
+      "veggieName": "string",
+      "veggieLike": "boolean"
+    }
+  },
+  "schema": {
+    "fruits": ["array", "string"],
+    "vegetables": ["array", ["ref", "Veggie"]]
   }
 }
 ```
 
-Spartan Schema supports references too, but it doesn't support required fields.
+Spartan Schema supports references, using `"let"` and `"ref"`. All fields are
+required unless marked `"optional"`.
 
 </td></tr></table>
 
 ## API
 
-Spartan Schema has an object-oriented API. `compileSchema` takes a JS object
-representing a schema source, and returns a `Schema` object with methods for
-validation and inspection.
+Spartan Schema defines only a few functions that operate on schema objects.
+A schema object is made up of plain JavaScript objects and arrays that match the
+Spartan Schema spec.
 
-```javascript
-import { compileSchema } from 'spartan-schema';
+### type `Schema`
 
-const schema = compileSchema({ city: 'string', state: 'string' });
-schema.validate({ city: 'New York', state: 'New York' }); // = []
+The type of valid Spartan Schemas.
 
-// If validate returns an empty array, the object matched the schema.
-```
+When writing schemas directly in Typescript code, you should not use this type;
+instead, use `as const` and let Typescript infer the exact type of the schema.
 
-### function `compileSchema(source)`
+### type `MatchesSchema<S extends Schema>`
 
-Compiles a `source` object and returns a `Schema`. If you are trying to compile
-a schema written in JSON, `JSON.parse` it first.
+Given a type `S` that describes the exact shape of a `Schema`,
+`MatchesSchema<S>` is the type of values that match that schema.
 
-Can throw a `SchemaCompileError`.
+For example, `MatchesSchema<{ schema: { foo: "string" } }>` is
+`{ foo: string }`.
 
-### class `Schema`
+`MatchesSchema` is a complex recursive type, and can easily cause the Typescript
+compiler to fail with a "Type instantiation is excessively deep and possibly
+infinite" error. It should only be used on schema types that are 100% statically
+known.
 
-A compiled Spartan Schema. A `Schema` represents a single top-level type; each
-individual type within a `Schema` is itself a `Schema`.
+### type `PathArray`
 
-#### method `validate(value, options?)`
+`type PathArray = readonly (string | number)[]`
 
-Tests whether `value` matches this schema.
+A path to a specific location in a JSON document.
 
-Returns an array of validation errors as `{ path, type, value }` objects. `path`
-is an array of `string`s or `number`s, showing where the type mismatch occurred.
-`type` is the `Schema` at that path, and `value` is the value at that path that
-did not match `type`. If `validate` returns an empty array, validation was
-successful.
+### function `isSchema(schema, errors?)`
 
-`options` is an optional object, with the following optional keys:
+A type predicate that checks whether `schema` is a valid Spartan Schema.
 
-- `allowExtraFields`, boolean: If `true`, validation will fail if any object
-  contains fields not specified in the schema. Defaults to `false`.
-- `path`, array: A path to append to the start of the `path`s in the returned
-  error objects. Used internally.
+`errors` is a mutable array of `{ message, location }` pairs; if it is present
+and `isSchema` returns false, it will be populated with a list of parsing
+errors.
 
-#### method `restrict(value, options?)`
+### function `matchesSchema(schema)(value)`
 
-Removes all object keys and array elements from `value` that do not match this
-schema, and optionally inserts zero values in missing keys. Returns either
-a value that matches this schema, or `undefined` if even the top-level type does
-not match.
+A curried function that checks whether `value` matches `schema` and returns
+a boolean.
 
-`options` is an optional object, with the following optional keys:
+If `schema` is statically known at typechecking type (defined with `as const`),
+then the function returned by `matchesSchema(schema)` will be a type predicate.
 
-- `fillEmpty`, boolean: If `true`, all array and object types in this schema are
-  populated with empty arrays or empty objects if missing. Defaults to `false`.
-- `fillZero`, boolean: If `true`, all missing object keys in this schema are
-  populated with their types' zero values. Implies `fillEmpty`. Defaults to
-  `false`.
-- `coerce`, boolean: If `true`, when `restrict` encounters a scalar value that
-  does not match its schema type, but could be converted to match that type, it
-  will be converted instead of removed. Defaults to `false`. The following
-  conversions are supported:
-  - `false`, `0`, `"null"` → `null`
-  - `null` → boolean (as `false`)
-  - integer, float → boolean (`0` is `false`)
-  - float → integer (rounded to nearest integer)
-  - `null`, boolean, integer, float → string
-  - string → `null`, boolean, integer, float (if it parses)
-  - binary → string (as base64)
-  - string → binary (if valid base64)
-  - date → string (as ISO 8601)
-  - string → date (if valid ISO 8601)
-  - date → integer (as UNIX timestamp)
-  - integer → date (as UNIX timestamp)
+### function `zeroValue(schema)`
 
-Can throw a `RecursionError` if called on a recursive schema with either
-`fillEmpty` or `fillZero` set to `true`.
+Returns the *zero value* of this schema's root type.
 
-#### method `zeroValue()`
+| Type           | Zero value                                    |
+| -------------- | --------------------------------------------- |
+| `null`         | `null`                                        |
+| boolean        | `false`                                       |
+| integer, float | `0`                                           |
+| string         | `""`                                          |
+| binary         | `0`-length `Uint8Array`                       |
+| date           | `new Date(0)` (Jan 1, 1970)                   |
+| object         | object populated with properties' zero values |
+| `oneof`        | zero value of first type                      |
+| `enum`         | first enum value                              |
+| `array`        | `[]`                                          |
+| `tuple`        | array populated with elements' zero values    |
+| `dictionary`   | `{}`                                          |
 
-Returns the *zero value* of this schema type.
+This function typechecks the schema it receives. If it is passed a known schema
+type `S` (defined `as const` in a Typescript file), then its return type will
+be `MatchesSchema<S>`.
 
-| Type           | Zero value                                   |
-| -------------- | -------------------------------------------- |
-| `null`         | `null`                                       |
-| boolean        | `false`                                      |
-| integer, float | `0`                                          |
-| string         | `""`                                         |
-| binary         | `0`-length `Uint8Array`                      |
-| date           | `new Date(0)` (Jan 1, 1970)                  |
-| `enum`         | first enum value                             |
-| array          | `[]`                                         |
-| object         | object populated with all keys' zero values  |
-| `dictionary`   | `{}`                                         |
-| `oneof`        | zero value of first type                     |
-| `any`          | `null`                                       |
-
-Can throw a `RecursionError` if called on a recursive object type.
-
-#### method `atPath(path)`
-
-Given a `path` array consisting of strings and numbers (object keys and array
-indexes), returns a `Schema` representing the type at that path in this schema.
-Returns `undefined` if the path is not valid in this schema.
-
-Can throw an `AmbiguousPathError` if called on a schema without a fixed shape
-(see `hasFixedShape`).
-
-#### method `toSource()`
-
-Decompiles a compiled schema into its JSON source (as objects, not a JSON
-string).
-
-Not guaranteed to be a safe round-trip operation if recursive references are
-involved; the result will contain labels without corresponding definitions.
-
-#### method `isScalar()`
-
-Returns `true` if this schema is a scalar type (not an array or object).
-
-#### method `isArray()`
-
-Returns `true` if this schema is an array type.
-
-#### method `isObject()`
-
-Returns `true` if this schema is an object or `dictionary` type.
-
-#### method `isRecursive()`
-
-Returns `true` if this schema contains recursive references that could cause
-`zeroValue` to fail.
-
-### method `hasFixedShape()`
-
-Returns `true` if this schema meets the condition that *every typed location
-must be **only one of** a scalar, an array, or an object*.
-
-In a schema with a fixed shape, `atPath` can know with certainty whether a given
-path is valid or invalid, and can always return a type or `undefined`.
-
-This will return `false` if the schema contains:
-
-- a `oneof` containing an array, an object, or a `dictionary`, or
-- the type `any`.
-
-### exception `AmbiguousPathError`
-
-Thrown when `atPath` is called on a path that is valid for some—but not all—JSON
-values that match a schema. For example:
-
-```json
-{
-  "foo": ["oneof", ["string"], { "bar": "integer" }]
-}
-```
-
-What is the type of `["foo", 0]` in this schema? It could be `"string"`, but it
-could also be `undefined` if `foo` is an object. When faced with this ambiguity,
-Spartan Schema throws an exception.
-
-`hasFixedShape` checks whether your schema is safe from these ambiguities.
-
-### exception `RecursionError`
-
-Thrown when  `zeroValue` is called on a recursive schema, or when `restrict` is
-called with the options `fillEmpty: true` or `fillZero: true` on a recursive
-schema. This would produce an infinitely nested object, so it throws an
-exception instead.
-
-### exception `SchemaCompileError`
-
-Thrown when `compileSchema` fails to compile its input.
+May throw an exception if the schema type is infinitely recursive.
 
 ## License
 
-Copyright &copy; 2021 Adam Nelson
+Copyright &copy; 2021-2022 Adam Nelson
 
 Spartan Schema is distributed under the [Blue Oak Model License][blue-oak]. It
 is a MIT/BSD-style license, but with [some clarifying
@@ -366,7 +341,7 @@ improvements][why-blue-oak] around patents, attribution, and multiple
 contributors.
 
 [json-schema]: https://json-schema.org
-[tsconfig]: https://www.typescriptlang.org/tsconfig
 [osmosis]: https://github.com/ar-nelson/osmosis-js
+[types]: https://www.typescriptlang.org/docs/handbook/2/conditional-types.html
 [blue-oak]: https://blueoakcouncil.org/license/1.0.0
 [why-blue-oak]: https://writing.kemitchell.com/2019/03/09/Deprecation-Notice.html
