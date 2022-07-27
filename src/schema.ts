@@ -306,43 +306,269 @@ type MatchesObject<
     ]: S[K] extends SchemaType ? MatchesSchemaType<S[K], Refs> : unknown;
   };
 
-type MatchesArray<A, Refs extends { [key: string]: SchemaType }> = A extends [
-  SchemaType,
-] ? readonly MatchesSchemaType<A[0], Refs>[]
-  : A extends [SchemaType, SchemaType] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    ...MatchesSchemaType<A[1], Refs>[],
-  ]
-  : A extends [SchemaType, SchemaType, SchemaType] ? readonly [
+type MatchesArray<A, Refs extends { [key: string]: SchemaType }> = A extends readonly [] ? never
+  : A extends readonly [SchemaType] ? readonly MatchesSchemaType<A[0], Refs>[]
+  : A extends readonly [SchemaType, SchemaType]
+    ? readonly [MatchesSchemaType<A[0], Refs>, ...MatchesSchemaType<A[1], Refs>[]]
+  : A extends readonly [SchemaType, SchemaType, SchemaType] ? readonly [
     MatchesSchemaType<A[0], Refs>,
     MatchesSchemaType<A[1], Refs>,
     ...MatchesSchemaType<A[2], Refs>[],
   ]
-  : A extends readonly [SchemaType, SchemaType, SchemaType, ...infer Rest] ? readonly [
+  : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType] ? readonly [
     MatchesSchemaType<A[0], Refs>,
     MatchesSchemaType<A[1], Refs>,
     MatchesSchemaType<A[2], Refs>,
-    ...MatchesArray<Rest, Refs>,
+    ...MatchesSchemaType<A[3], Refs>[],
   ]
-  : readonly unknown[];
+  : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    ...MatchesSchemaType<A[4], Refs>[],
+  ]
+  : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType, SchemaType]
+    ? readonly [
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      ...MatchesSchemaType<A[5], Refs>[],
+    ]
+  : A extends
+    readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType, SchemaType, SchemaType]
+    ? readonly [
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      ...MatchesSchemaType<A[6], Refs>[],
+    ]
+  : A extends readonly [
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+  ] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    MatchesSchemaType<A[4], Refs>,
+    MatchesSchemaType<A[5], Refs>,
+    MatchesSchemaType<A[6], Refs>,
+    ...MatchesSchemaType<A[7], Refs>[],
+  ]
+  : A extends readonly [
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+  ] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    MatchesSchemaType<A[4], Refs>,
+    MatchesSchemaType<A[5], Refs>,
+    MatchesSchemaType<A[6], Refs>,
+    MatchesSchemaType<A[7], Refs>,
+    ...MatchesSchemaType<A[8], Refs>[],
+  ]
+  : A extends readonly [
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+  ] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    MatchesSchemaType<A[4], Refs>,
+    MatchesSchemaType<A[5], Refs>,
+    MatchesSchemaType<A[6], Refs>,
+    MatchesSchemaType<A[7], Refs>,
+    MatchesSchemaType<A[8], Refs>,
+    ...MatchesSchemaType<A[9], Refs>[],
+  ]
+  : A extends readonly [
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    ...SchemaType[],
+  ] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    MatchesSchemaType<A[4], Refs>,
+    MatchesSchemaType<A[5], Refs>,
+    MatchesSchemaType<A[6], Refs>,
+    MatchesSchemaType<A[7], Refs>,
+    MatchesSchemaType<A[8], Refs>,
+    MatchesSchemaType<A[9], Refs>,
+    ...unknown[],
+  ]
+  : unknown[];
 
-type MatchesTuple<A, Refs extends { [key: string]: SchemaType }> = A extends [
-  SchemaType,
-] ? readonly [MatchesSchemaType<A[0], Refs>]
-  : A extends [SchemaType, SchemaType]
+type MatchesTuple<A, Refs extends { [key: string]: SchemaType }> = A extends readonly [] ? never
+  : A extends readonly [SchemaType] ? readonly [MatchesSchemaType<A[0], Refs>]
+  : A extends readonly [SchemaType, SchemaType]
     ? readonly [MatchesSchemaType<A[0], Refs>, MatchesSchemaType<A[1], Refs>]
-  : A extends [SchemaType, SchemaType, SchemaType] ? readonly [
+  : A extends readonly [SchemaType, SchemaType, SchemaType] ? readonly [
     MatchesSchemaType<A[0], Refs>,
     MatchesSchemaType<A[1], Refs>,
     MatchesSchemaType<A[2], Refs>,
   ]
-  : A extends readonly [SchemaType, SchemaType, SchemaType, ...infer Rest] ? readonly [
+  : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType] ? readonly [
     MatchesSchemaType<A[0], Refs>,
     MatchesSchemaType<A[1], Refs>,
     MatchesSchemaType<A[2], Refs>,
-    ...MatchesTuple<Rest, Refs>,
+    MatchesSchemaType<A[3], Refs>,
   ]
-  : readonly unknown[];
+  : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    MatchesSchemaType<A[4], Refs>,
+  ]
+  : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType, SchemaType]
+    ? readonly [
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+    ]
+  : A extends
+    readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType, SchemaType, SchemaType]
+    ? readonly [
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      MatchesSchemaType<A[6], Refs>,
+    ]
+  : A extends readonly [
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+  ] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    MatchesSchemaType<A[4], Refs>,
+    MatchesSchemaType<A[5], Refs>,
+    MatchesSchemaType<A[6], Refs>,
+    MatchesSchemaType<A[7], Refs>,
+  ]
+  : A extends readonly [
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+  ] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    MatchesSchemaType<A[4], Refs>,
+    MatchesSchemaType<A[5], Refs>,
+    MatchesSchemaType<A[6], Refs>,
+    MatchesSchemaType<A[7], Refs>,
+    MatchesSchemaType<A[8], Refs>,
+  ]
+  : A extends readonly [
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+  ] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    MatchesSchemaType<A[4], Refs>,
+    MatchesSchemaType<A[5], Refs>,
+    MatchesSchemaType<A[6], Refs>,
+    MatchesSchemaType<A[7], Refs>,
+    MatchesSchemaType<A[8], Refs>,
+    MatchesSchemaType<A[9], Refs>,
+  ]
+  : A extends readonly [
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    SchemaType,
+    ...SchemaType[],
+  ] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    MatchesSchemaType<A[3], Refs>,
+    MatchesSchemaType<A[4], Refs>,
+    MatchesSchemaType<A[5], Refs>,
+    MatchesSchemaType<A[6], Refs>,
+    MatchesSchemaType<A[7], Refs>,
+    MatchesSchemaType<A[8], Refs>,
+    MatchesSchemaType<A[9], Refs>,
+    ...unknown[],
+  ]
+  : unknown[];
 
 export type MatchesSchemaType<
   S extends SchemaType,

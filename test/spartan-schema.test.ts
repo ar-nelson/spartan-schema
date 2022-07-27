@@ -288,7 +288,7 @@ describe('Spartan Schema', () => {
       expect(valid).toBe(true);
     });
     it('matches array prefix without suffix', () => {
-      expectToMatch(tuplesSchema)([[1]] as const);
+      expectToMatch(tuplesSchema)([[1]]);
     });
     it('matches array with typed suffix', () => {
       expectToMatch(tuplesSchema)([[2], ['foo', 'bar', true]]);
