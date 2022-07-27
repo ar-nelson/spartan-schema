@@ -1,6 +1,0 @@
-src/
-test/
-.eslintignore
-.eslintrc.json
-.prettierrc.js
-tsconfig.json

@@ -49,7 +49,7 @@ function isObjectLike(value: unknown): boolean {
   return !!value && typeof value === 'object';
 }
 
-export default function isPlainObject(value: unknown): value is {} {
+export default function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (!isObjectLike(value) || objectToString.call(value) !== objectTag) {
     return false;
   }

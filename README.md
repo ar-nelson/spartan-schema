@@ -91,6 +91,33 @@ Schema][json-schema], designed as part of [Osmosis][osmosis].
    }
    ```
 
+## Usage
+
+Spartan Schema is compatible with both Node and Deno, and has no dependencies.
+
+The repository is written in Deno-compatible Typescript. `mod.ts` can be
+imported directly:
+
+```typescript
+import {
+  Schema,
+  matchesSchema
+} from 'https://raw.githubusercontent.com/ar-nelson/spartan-schema/v1.0.0/mod.ts';
+```
+
+The Node module is built with [`dnt`][dnt], and is available on NPM as
+`spartan-schema`:
+
+```typescript
+import {
+  Schema,
+  matchesSchema
+} from 'spartan-schema';
+```
+
+All `deno` build commands are documented in the Makefile. To run the test suite
+and build the Node module, just run `make` (requires Deno).
+
 ## The Schema Language
 
 ### The Root Object
@@ -343,5 +370,6 @@ contributors.
 [json-schema]: https://json-schema.org
 [osmosis]: https://github.com/ar-nelson/osmosis-js
 [types]: https://www.typescriptlang.org/docs/handbook/2/conditional-types.html
+[dnt]: https://github.com/denoland/dnt
 [blue-oak]: https://blueoakcouncil.org/license/1.0.0
 [why-blue-oak]: https://writing.kemitchell.com/2019/03/09/Deprecation-Notice.html

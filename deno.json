@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "strict": true
+  },
+  "lint": {
+    "files": {
+      "include": ["src/", "test/", "scripts/"],
+      "exclude": ["build/"]
+    }
+  },
+  "fmt": {
+    "files": {
+      "include": ["src/", "test/", "scripts/"],
+      "exclude": ["build/"]
+    },
+    "options": {
+      "lineWidth": 100,
+      "singleQuote": true
+    }
+  },
+  "test": {
+    "files": {
+      "include": ["test/"],
+      "exclude": ["build/"]
+    }
+  }
+}

@@ -2,8 +2,8 @@
 // Copyright © 2021-2022 Adam Nelson <adam@nels.onl>
 // Distributed under the Blue Oak Model License
 
-import isPlainObject from './isPlainObject.js';
-import { PathArray } from './path.js';
+import isPlainObject from './isPlainObject.ts';
+import { PathArray } from './path.ts';
 
 /**
  * The type of valid Spartan Schemas.
@@ -29,10 +29,10 @@ export type SchemaType =
   | 'date'
   | 'binary'
   | readonly [
-      'enum',
-      string | number | boolean | null,
-      ...(string | number | boolean | null)[]
-    ]
+    'enum',
+    string | number | boolean | null,
+    ...(string | number | boolean | null)[],
+  ]
   | readonly ['tuple', SchemaType, ...SchemaType[]]
   | readonly ['array', SchemaType, ...SchemaType[]]
   | readonly ['dictionary', SchemaType]
@@ -47,9 +47,9 @@ export interface SchemaError {
 
 function isSchemaType(
   schema: unknown,
-  refs: object,
+  refs: Record<string, unknown>,
   location: PathArray,
-  errors?: SchemaError[]
+  errors?: SchemaError[],
 ): schema is SchemaType {
   if (schema === null) {
     return true;
@@ -86,8 +86,7 @@ function isSchemaType(
               result = false;
               errors &&
                 errors.push({
-                  message:
-                    '"enum" type elements must be boolean, number, string, or null',
+                  message: '"enum" type elements must be boolean, number, string, or null',
                   location: [...location, i],
                 });
           }
@@ -138,9 +137,11 @@ function isSchemaType(
         if (!(schema[1] in refs)) {
           errors &&
             errors.push({
-              message: `"ref" type refers to nonexistent variable ${JSON.stringify(
-                schema[1]
-              )}`,
+              message: `"ref" type refers to nonexistent variable ${
+                JSON.stringify(
+                  schema[1],
+                )
+              }`,
               location: [...location, 1],
             });
           return false;
@@ -218,6 +219,7 @@ function isSchemaType(
     });
   return false;
 }
+
 /**
  * A type predicate that checks whether `schema` is a valid Spartan Schema.
  *
@@ -227,7 +229,7 @@ function isSchemaType(
  */
 export function isSchema(
   schema: unknown,
-  errors?: SchemaError[]
+  errors?: SchemaError[],
 ): schema is Schema {
   if (!isPlainObject(schema)) {
     errors &&
@@ -249,7 +251,7 @@ export function isSchema(
       }
     }
   }
-  let refs: object = {};
+  let refs: Record<string, unknown> = {};
   if ('let' in schema) {
     if (isPlainObject(schema['let'])) {
       refs = schema['let'];
@@ -288,96 +290,82 @@ type MatchesObject<
   S extends {
     readonly [key: string]: SchemaType | readonly ['optional', SchemaType];
   },
-  Refs extends { [key: string]: SchemaType }
-> = {
-  readonly [K in keyof S as S[K] extends readonly ['optional', SchemaType]
-    ? K
-    : never]?: S[K] extends readonly ['optional', SchemaType]
-    ? MatchesSchemaType<S[K][1], Refs>
-    : unknown;
-} & {
-  readonly [K in keyof S as S[K] extends readonly ['optional', SchemaType]
-    ? never
-    : K]: S[K] extends SchemaType ? MatchesSchemaType<S[K], Refs> : unknown;
-};
+  Refs extends { [key: string]: SchemaType },
+> =
+  & {
+    readonly [
+      K in keyof S as S[K] extends readonly ['optional', SchemaType] ? K
+        : never
+    ]?: S[K] extends readonly ['optional', SchemaType] ? MatchesSchemaType<S[K][1], Refs>
+      : unknown;
+  }
+  & {
+    readonly [
+      K in keyof S as S[K] extends readonly ['optional', SchemaType] ? never
+        : K
+    ]: S[K] extends SchemaType ? MatchesSchemaType<S[K], Refs> : unknown;
+  };
 
 type MatchesArray<A, Refs extends { [key: string]: SchemaType }> = A extends [
-  SchemaType
-]
-  ? readonly MatchesSchemaType<A[0], Refs>[]
-  : A extends [SchemaType, SchemaType]
-  ? readonly [MatchesSchemaType<A[0], Refs>, ...MatchesSchemaType<A[1], Refs>[]]
-  : A extends [SchemaType, SchemaType, SchemaType]
-  ? readonly [
-      MatchesSchemaType<A[0], Refs>,
-      MatchesSchemaType<A[1], Refs>,
-      ...MatchesSchemaType<A[2], Refs>[]
-    ]
-  : A extends readonly [SchemaType, SchemaType, SchemaType, ...infer Rest]
-  ? readonly [
-      MatchesSchemaType<A[0], Refs>,
-      MatchesSchemaType<A[1], Refs>,
-      MatchesSchemaType<A[2], Refs>,
-      ...MatchesArray<Rest, Refs>
-    ]
+  SchemaType,
+] ? readonly MatchesSchemaType<A[0], Refs>[]
+  : A extends [SchemaType, SchemaType] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    ...MatchesSchemaType<A[1], Refs>[],
+  ]
+  : A extends [SchemaType, SchemaType, SchemaType] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    ...MatchesSchemaType<A[2], Refs>[],
+  ]
+  : A extends readonly [SchemaType, SchemaType, SchemaType, ...infer Rest] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    ...MatchesArray<Rest, Refs>,
+  ]
   : readonly unknown[];
 
 type MatchesTuple<A, Refs extends { [key: string]: SchemaType }> = A extends [
-  SchemaType
-]
-  ? readonly [MatchesSchemaType<A[0], Refs>]
+  SchemaType,
+] ? readonly [MatchesSchemaType<A[0], Refs>]
   : A extends [SchemaType, SchemaType]
-  ? readonly [MatchesSchemaType<A[0], Refs>, MatchesSchemaType<A[1], Refs>]
-  : A extends [SchemaType, SchemaType, SchemaType]
-  ? readonly [
-      MatchesSchemaType<A[0], Refs>,
-      MatchesSchemaType<A[1], Refs>,
-      MatchesSchemaType<A[2], Refs>
-    ]
-  : A extends readonly [SchemaType, SchemaType, SchemaType, ...infer Rest]
-  ? readonly [
-      MatchesSchemaType<A[0], Refs>,
-      MatchesSchemaType<A[1], Refs>,
-      MatchesSchemaType<A[2], Refs>,
-      ...MatchesTuple<Rest, Refs>
-    ]
+    ? readonly [MatchesSchemaType<A[0], Refs>, MatchesSchemaType<A[1], Refs>]
+  : A extends [SchemaType, SchemaType, SchemaType] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+  ]
+  : A extends readonly [SchemaType, SchemaType, SchemaType, ...infer Rest] ? readonly [
+    MatchesSchemaType<A[0], Refs>,
+    MatchesSchemaType<A[1], Refs>,
+    MatchesSchemaType<A[2], Refs>,
+    ...MatchesTuple<Rest, Refs>,
+  ]
   : readonly unknown[];
 
 export type MatchesSchemaType<
   S extends SchemaType,
-  Refs extends { [key: string]: SchemaType }
-> = SchemaType extends S
-  ? unknown
-  : S extends null | 'null'
-  ? null
-  : S extends 'boolean'
-  ? boolean
-  : S extends 'integer' | 'float' | 'number'
-  ? number
-  : S extends 'string'
-  ? string
-  : S extends 'date'
-  ? Date
-  : S extends 'binary'
-  ? Uint8Array
-  : S extends readonly ['enum', ...infer Values]
-  ? Values[number]
-  : S extends readonly ['tuple', ...infer Props]
-  ? MatchesTuple<Props, Refs>
-  : S extends readonly ['array', ...infer Props]
-  ? MatchesArray<Props, Refs>
+  Refs extends { [key: string]: SchemaType },
+> = SchemaType extends S ? unknown
+  : S extends null | 'null' ? null
+  : S extends 'boolean' ? boolean
+  : S extends 'integer' | 'float' | 'number' ? number
+  : S extends 'string' ? string
+  : S extends 'date' ? Date
+  : S extends 'binary' ? Uint8Array
+  : S extends readonly ['enum', ...infer Values] ? Values[number]
+  : S extends readonly ['tuple', ...infer Props] ? MatchesTuple<Props, Refs>
+  : S extends readonly ['array', ...infer Props] ? MatchesArray<Props, Refs>
   : S extends readonly ['dictionary', SchemaType]
-  ? { readonly [key: string]: MatchesSchemaType<S[1], Refs> }
+    ? { readonly [key: string]: MatchesSchemaType<S[1], Refs> }
   : S extends readonly ['oneof', ...infer Branches]
-  ? Branches extends readonly SchemaType[]
-    ? MatchesSchemaType<Branches[number], Refs>
+    ? Branches extends readonly SchemaType[] ? MatchesSchemaType<Branches[number], Refs>
     : unknown
-  : S extends readonly ['ref', keyof Refs]
-  ? MatchesSchemaType<Refs[S[1]], Refs>
+  : S extends readonly ['ref', keyof Refs] ? MatchesSchemaType<Refs[S[1]], Refs>
   : S extends {
-      readonly [key: string]: SchemaType | readonly ['optional', SchemaType];
-    }
-  ? MatchesObject<S, Refs>
+    readonly [key: string]: SchemaType | readonly ['optional', SchemaType];
+  } ? MatchesObject<S, Refs>
   : never;
 
 /**
@@ -392,12 +380,11 @@ export type MatchesSchemaType<
  * and possibly infinite" error. It should only be used on schema types that are
  * 100% statically known.
  */
-export type MatchesSchema<S extends Schema> = Schema extends S
-  ? unknown
+export type MatchesSchema<S extends Schema> = Schema extends S ? unknown
   : MatchesSchemaType<
-      S['schema'],
-      S['let'] extends { [key: string]: SchemaType } ? S['let'] : {}
-    >;
+    S['schema'],
+    S['let'] extends { [key: string]: SchemaType } ? S['let'] : Record<never, never>
+  >;
 
 type RefMatchers<Refs extends { readonly [key: string]: SchemaType }> = {
   [K in keyof Refs]: (value: unknown) => boolean;
@@ -405,14 +392,14 @@ type RefMatchers<Refs extends { readonly [key: string]: SchemaType }> = {
 
 function matchesSchemaType<
   S extends SchemaType,
-  Refs extends { readonly [key: string]: SchemaType }
+  Refs extends { readonly [key: string]: SchemaType },
 >(schema: S, refs: RefMatchers<Refs>): (value: unknown) => boolean {
   if (schema === null) {
-    return value => value === null;
+    return (value) => value === null;
   } else if (Array.isArray(schema)) {
     switch (schema[0]) {
       case 'enum':
-        return value => {
+        return (value) => {
           for (let i = 1; i < schema.length; i++) {
             if (value === schema[i]) {
               return true;
@@ -421,10 +408,8 @@ function matchesSchemaType<
           return false;
         };
       case 'tuple': {
-        const predicates = (schema.slice(1) as SchemaType[]).map(e =>
-          matchesSchemaType(e, refs)
-        );
-        return value => {
+        const predicates = (schema.slice(1) as SchemaType[]).map((e) => matchesSchemaType(e, refs));
+        return (value) => {
           if (!Array.isArray(value) || value.length !== predicates.length) {
             return false;
           }
@@ -439,12 +424,12 @@ function matchesSchemaType<
       case 'array': {
         if (schema.length === 2) {
           const e = matchesSchemaType(schema[1], refs);
-          return value => Array.isArray(value) && value.every(e);
+          return (value) => Array.isArray(value) && value.every(e);
         } else {
-          const predicates = (schema.slice(1) as SchemaType[]).map(e =>
+          const predicates = (schema.slice(1) as SchemaType[]).map((e) =>
             matchesSchemaType(e, refs)
           );
-          return value => {
+          return (value) => {
             if (!Array.isArray(value) || value.length < predicates.length - 1) {
               return false;
             }
@@ -463,46 +448,45 @@ function matchesSchemaType<
       }
       case 'dictionary': {
         const e = matchesSchemaType(schema[1], refs);
-        return value => isPlainObject(value) && Object.values(value).every(e);
+        return (value) => isPlainObject(value) && Object.values(value).every(e);
       }
       case 'oneof': {
-        const predicates = (schema.slice(1) as SchemaType[]).map(e =>
-          matchesSchemaType(e, refs)
-        );
-        return value => predicates.some(p => p(value));
+        const predicates = (schema.slice(1) as SchemaType[]).map((e) => matchesSchemaType(e, refs));
+        return (value) => predicates.some((p) => p(value));
       }
       case 'ref':
-        return value => refs[schema[1]](value);
+        return (value) => refs[schema[1]](value);
     }
   } else if (isPlainObject(schema)) {
     const predicates = Object.entries(schema).map(([k, v]) => {
       const isOptional = Array.isArray(v) && v[0] === 'optional';
       const predicate = matchesSchemaType(isOptional ? v[1] : v, refs);
-      return (value: {}) =>
+      return (value: Record<string, unknown>) =>
         k in value ? predicate(value[k as keyof typeof value]) : isOptional;
     });
-    return value => isPlainObject(value) && predicates.every(p => p(value));
+    return (value) => isPlainObject(value) && predicates.every((p) => p(value));
   } else {
     switch (schema) {
       case 'null':
-        return value => value === null;
+        return (value) => value === null;
       case 'boolean':
-        return value => typeof value === 'boolean';
+        return (value) => typeof value === 'boolean';
       case 'float':
       case 'number':
-        return value => typeof value === 'number';
+        return (value) => typeof value === 'number';
       case 'integer':
-        return value => typeof value === 'number' && Number.isInteger(value);
+        return (value) => typeof value === 'number' && Number.isInteger(value);
       case 'string':
-        return value => typeof value === 'string';
+        return (value) => typeof value === 'string';
       case 'date':
-        return value => value instanceof Date;
+        return (value) => value instanceof Date;
       case 'binary':
-        return value => ArrayBuffer.isView(value);
+        return (value) => ArrayBuffer.isView(value);
     }
   }
   return () => false;
 }
+
 /**
  * A curried function that checks whether `value` matches `schema` and returns
  * a boolean.
@@ -520,14 +504,14 @@ export function matchesSchema<S extends Schema>({
     refPredicates[k] = matchesSchemaType(v, refPredicates);
   }
   return matchesSchemaType(schema, refPredicates) as (
-    value: unknown
+    value: unknown,
   ) => value is MatchesSchema<S>;
 }
 
 function typeZeroValue(
   schema: SchemaType,
   refs: { readonly [key: string]: SchemaType },
-  history: Set<SchemaType>
+  history: Set<SchemaType>,
 ): unknown {
   if (schema === null) {
     return null;
@@ -554,9 +538,11 @@ function typeZeroValue(
   }
   if (history.has(schema)) {
     throw new Error(
-      `Cannot determine zero value of the infinite schema type ${JSON.stringify(
-        schema
-      )}`
+      `Cannot determine zero value of the infinite schema type ${
+        JSON.stringify(
+          schema,
+        )
+      }`,
     );
   }
   history.add(schema);
@@ -566,11 +552,9 @@ function typeZeroValue(
       case 'enum':
         return schema[1];
       case 'tuple':
-        return (schema.slice(1) as SchemaType[]).map(n =>
-          typeZeroValue(n, refs, history)
-        );
+        return (schema.slice(1) as SchemaType[]).map((n) => typeZeroValue(n, refs, history));
       case 'array':
-        return (schema.slice(1, schema.length - 1) as SchemaType[]).map(n =>
+        return (schema.slice(1, schema.length - 1) as SchemaType[]).map((n) =>
           typeZeroValue(n, refs, history)
         );
       case 'dictionary':
@@ -584,11 +568,11 @@ function typeZeroValue(
     return Object.entries(schema)
       .filter(([, v]) => !Array.isArray(v) || v[0] !== 'optional')
       .reduce(
-        (accum: object, [k, v]) => ({
+        (accum: Record<string, unknown>, [k, v]) => ({
           ...accum,
           [k]: typeZeroValue(v, refs, history),
         }),
-        {}
+        {},
       );
   }
   return undefined;
