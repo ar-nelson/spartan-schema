@@ -129,8 +129,8 @@ properties are allowed, and will be ignored.
 - `"schema"`: The schema itself. A single schema type.
 - `"let"`: An object whose values are schema types. Its properties are defined
   as *reference types*, which can be accessed with the `"ref"` directive type.
-  - For example, `{ "let": { "Foo": "string" }, { "schema": ["ref", "Foo"] } }`
-    is equivalent to `{ "schema": "string" }`.
+  - For example, `{ "let": { "Foo": "string" }, "schema": ["ref", "Foo"] }` is
+    equivalent to `{ "schema": "string" }`.
 - `"spartan"`: The Spartan Schema major version of this schema. If present, it
   must be `1`.
 
