@@ -102,7 +102,7 @@ imported directly:
 import {
   Schema,
   matchesSchema
-} from 'https://raw.githubusercontent.com/ar-nelson/spartan-schema/v1.0.0/mod.ts';
+} from 'https://deno.land/x/spartanschema/v1.1.0/mod.ts';
 ```
 
 The Node module is built with [`dnt`][dnt], and is available on NPM as
@@ -317,6 +317,14 @@ known.
 
 A path to a specific location in a JSON document.
 
+### type `SchemaAssertionError`
+
+`{ json, schema, validationErrors, message }`
+
+A detailed error thrown by `assertMatchesSchema` when schema validation fails.
+Includes the schema, the JSON that didn't match, and the list of validation
+errors, complete with JSONPath locations in both the schema and the JSON value.
+
 ### function `isSchema(schema, errors?)`
 
 A type predicate that checks whether `schema` is a valid Spartan Schema.
@@ -325,13 +333,28 @@ A type predicate that checks whether `schema` is a valid Spartan Schema.
 and `isSchema` returns false, it will be populated with a list of parsing
 errors.
 
-### function `matchesSchema(schema)(value)`
+### function `matchesSchema(schema)(value, errors?)`
 
 A curried function that checks whether `value` matches `schema` and returns
 a boolean.
 
 If `schema` is statically known at typechecking type (defined with `as const`),
 then the function returned by `matchesSchema(schema)` will be a type predicate.
+
+`errors` is a mutable array of `{ dataPath, schemaPath, message, children? }`
+objects. If it is present and `matchesSchema` returns false, it will be
+populated with a list of validation errors.
+
+### function `assertMatchesSchema(schema)(value, message?)`
+
+A curried function that checks whether `value` matches `schema` and throws
+a `SchemaAssertionError` if it doesn't.
+
+If `schema` is statically known at typechecking type (defined with `as const`),
+then the function returned by `assertMatchesSchema(schema)` will be a type
+assertion function.
+
+`message` is an optional message string to include in the thrown error.
 
 ### function `zeroValue(schema)`
 
@@ -360,7 +383,7 @@ May throw an exception if the schema type is infinitely recursive.
 
 ## License
 
-Copyright &copy; 2021-2022 Adam Nelson
+Copyright &copy; 2021-2023 Adam Nelson
 
 Spartan Schema is distributed under the [Blue Oak Model License][blue-oak]. It
 is a MIT/BSD-style license, but with [some clarifying

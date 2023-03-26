@@ -1,9 +1,9 @@
 // Spartan Schema
-// Copyright © 2021-2022 Adam Nelson <adam@nels.onl>
+// Copyright © 2021-2023 Adam Nelson <adam@nels.onl>
 // Distributed under the Blue Oak Model License
 
 import isPlainObject from './isPlainObject.ts';
-import { PathArray } from './path.ts';
+import { PathArray, pathToString } from './path.ts';
 
 /**
  * The type of valid Spartan Schemas.
@@ -311,23 +311,23 @@ type MatchesArray<A, Refs extends { [key: string]: SchemaType }> = A extends rea
   : A extends readonly [SchemaType, SchemaType]
     ? readonly [MatchesSchemaType<A[0], Refs>, ...MatchesSchemaType<A[1], Refs>[]]
   : A extends readonly [SchemaType, SchemaType, SchemaType] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    ...MatchesSchemaType<A[2], Refs>[],
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      ...MatchesSchemaType<A[2], Refs>[],
+    ]
   : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    ...MatchesSchemaType<A[3], Refs>[],
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      ...MatchesSchemaType<A[3], Refs>[],
+    ]
   : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    ...MatchesSchemaType<A[4], Refs>[],
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      ...MatchesSchemaType<A[4], Refs>[],
+    ]
   : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType, SchemaType]
     ? readonly [
       MatchesSchemaType<A[0], Refs>,
@@ -358,15 +358,15 @@ type MatchesArray<A, Refs extends { [key: string]: SchemaType }> = A extends rea
     SchemaType,
     SchemaType,
   ] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    MatchesSchemaType<A[4], Refs>,
-    MatchesSchemaType<A[5], Refs>,
-    MatchesSchemaType<A[6], Refs>,
-    ...MatchesSchemaType<A[7], Refs>[],
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      MatchesSchemaType<A[6], Refs>,
+      ...MatchesSchemaType<A[7], Refs>[],
+    ]
   : A extends readonly [
     SchemaType,
     SchemaType,
@@ -378,16 +378,16 @@ type MatchesArray<A, Refs extends { [key: string]: SchemaType }> = A extends rea
     SchemaType,
     SchemaType,
   ] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    MatchesSchemaType<A[4], Refs>,
-    MatchesSchemaType<A[5], Refs>,
-    MatchesSchemaType<A[6], Refs>,
-    MatchesSchemaType<A[7], Refs>,
-    ...MatchesSchemaType<A[8], Refs>[],
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      MatchesSchemaType<A[6], Refs>,
+      MatchesSchemaType<A[7], Refs>,
+      ...MatchesSchemaType<A[8], Refs>[],
+    ]
   : A extends readonly [
     SchemaType,
     SchemaType,
@@ -400,17 +400,17 @@ type MatchesArray<A, Refs extends { [key: string]: SchemaType }> = A extends rea
     SchemaType,
     SchemaType,
   ] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    MatchesSchemaType<A[4], Refs>,
-    MatchesSchemaType<A[5], Refs>,
-    MatchesSchemaType<A[6], Refs>,
-    MatchesSchemaType<A[7], Refs>,
-    MatchesSchemaType<A[8], Refs>,
-    ...MatchesSchemaType<A[9], Refs>[],
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      MatchesSchemaType<A[6], Refs>,
+      MatchesSchemaType<A[7], Refs>,
+      MatchesSchemaType<A[8], Refs>,
+      ...MatchesSchemaType<A[9], Refs>[],
+    ]
   : A extends readonly [
     SchemaType,
     SchemaType,
@@ -424,18 +424,18 @@ type MatchesArray<A, Refs extends { [key: string]: SchemaType }> = A extends rea
     SchemaType,
     ...SchemaType[],
   ] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    MatchesSchemaType<A[4], Refs>,
-    MatchesSchemaType<A[5], Refs>,
-    MatchesSchemaType<A[6], Refs>,
-    MatchesSchemaType<A[7], Refs>,
-    MatchesSchemaType<A[8], Refs>,
-    MatchesSchemaType<A[9], Refs>,
-    ...unknown[],
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      MatchesSchemaType<A[6], Refs>,
+      MatchesSchemaType<A[7], Refs>,
+      MatchesSchemaType<A[8], Refs>,
+      MatchesSchemaType<A[9], Refs>,
+      ...unknown[],
+    ]
   : unknown[];
 
 type MatchesTuple<A, Refs extends { [key: string]: SchemaType }> = A extends readonly [] ? never
@@ -443,23 +443,23 @@ type MatchesTuple<A, Refs extends { [key: string]: SchemaType }> = A extends rea
   : A extends readonly [SchemaType, SchemaType]
     ? readonly [MatchesSchemaType<A[0], Refs>, MatchesSchemaType<A[1], Refs>]
   : A extends readonly [SchemaType, SchemaType, SchemaType] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+    ]
   : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+    ]
   : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    MatchesSchemaType<A[4], Refs>,
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+    ]
   : A extends readonly [SchemaType, SchemaType, SchemaType, SchemaType, SchemaType, SchemaType]
     ? readonly [
       MatchesSchemaType<A[0], Refs>,
@@ -490,15 +490,15 @@ type MatchesTuple<A, Refs extends { [key: string]: SchemaType }> = A extends rea
     SchemaType,
     SchemaType,
   ] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    MatchesSchemaType<A[4], Refs>,
-    MatchesSchemaType<A[5], Refs>,
-    MatchesSchemaType<A[6], Refs>,
-    MatchesSchemaType<A[7], Refs>,
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      MatchesSchemaType<A[6], Refs>,
+      MatchesSchemaType<A[7], Refs>,
+    ]
   : A extends readonly [
     SchemaType,
     SchemaType,
@@ -510,16 +510,16 @@ type MatchesTuple<A, Refs extends { [key: string]: SchemaType }> = A extends rea
     SchemaType,
     SchemaType,
   ] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    MatchesSchemaType<A[4], Refs>,
-    MatchesSchemaType<A[5], Refs>,
-    MatchesSchemaType<A[6], Refs>,
-    MatchesSchemaType<A[7], Refs>,
-    MatchesSchemaType<A[8], Refs>,
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      MatchesSchemaType<A[6], Refs>,
+      MatchesSchemaType<A[7], Refs>,
+      MatchesSchemaType<A[8], Refs>,
+    ]
   : A extends readonly [
     SchemaType,
     SchemaType,
@@ -532,17 +532,17 @@ type MatchesTuple<A, Refs extends { [key: string]: SchemaType }> = A extends rea
     SchemaType,
     SchemaType,
   ] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    MatchesSchemaType<A[4], Refs>,
-    MatchesSchemaType<A[5], Refs>,
-    MatchesSchemaType<A[6], Refs>,
-    MatchesSchemaType<A[7], Refs>,
-    MatchesSchemaType<A[8], Refs>,
-    MatchesSchemaType<A[9], Refs>,
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      MatchesSchemaType<A[6], Refs>,
+      MatchesSchemaType<A[7], Refs>,
+      MatchesSchemaType<A[8], Refs>,
+      MatchesSchemaType<A[9], Refs>,
+    ]
   : A extends readonly [
     SchemaType,
     SchemaType,
@@ -556,18 +556,18 @@ type MatchesTuple<A, Refs extends { [key: string]: SchemaType }> = A extends rea
     SchemaType,
     ...SchemaType[],
   ] ? readonly [
-    MatchesSchemaType<A[0], Refs>,
-    MatchesSchemaType<A[1], Refs>,
-    MatchesSchemaType<A[2], Refs>,
-    MatchesSchemaType<A[3], Refs>,
-    MatchesSchemaType<A[4], Refs>,
-    MatchesSchemaType<A[5], Refs>,
-    MatchesSchemaType<A[6], Refs>,
-    MatchesSchemaType<A[7], Refs>,
-    MatchesSchemaType<A[8], Refs>,
-    MatchesSchemaType<A[9], Refs>,
-    ...unknown[],
-  ]
+      MatchesSchemaType<A[0], Refs>,
+      MatchesSchemaType<A[1], Refs>,
+      MatchesSchemaType<A[2], Refs>,
+      MatchesSchemaType<A[3], Refs>,
+      MatchesSchemaType<A[4], Refs>,
+      MatchesSchemaType<A[5], Refs>,
+      MatchesSchemaType<A[6], Refs>,
+      MatchesSchemaType<A[7], Refs>,
+      MatchesSchemaType<A[8], Refs>,
+      MatchesSchemaType<A[9], Refs>,
+      ...unknown[],
+    ]
   : unknown[];
 
 export type MatchesSchemaType<
@@ -612,105 +612,227 @@ export type MatchesSchema<S extends Schema> = Schema extends S ? unknown
     S['let'] extends { [key: string]: SchemaType } ? S['let'] : Record<never, never>
   >;
 
-type RefMatchers<Refs extends { readonly [key: string]: SchemaType }> = {
-  [K in keyof Refs]: (value: unknown) => boolean;
+type Validator = (value: unknown, dataPath: PathArray) => ValidationError[];
+
+type RefValidators<Refs extends { readonly [key: string]: SchemaType }> = {
+  [K in keyof Refs]: Validator;
 };
 
-function matchesSchemaType<
+export interface ValidationError {
+  dataPath: PathArray;
+  schemaPath: PathArray;
+  message: string;
+  children?: ValidationError[][];
+}
+
+export function validationErrorToString({ dataPath, schemaPath, message }: ValidationError) {
+  return `${pathToString(dataPath)}: ${message} (rule ${pathToString(schemaPath)})`;
+}
+
+/**
+ * A detailed error thrown by [[assertMatchesSchema]] when schema validation
+ * fails. Includes the schema, the JSON that didn't match, and the list of
+ * validation errors, complete with JSONPath locations in both the schema and
+ * the JSON value.
+ */
+export class SchemaAssertionError extends Error {
+  static maxErrorsPerMessage = 8;
+
+  constructor(
+    public readonly json: unknown,
+    public readonly schema: Schema,
+    public readonly validationErrors: ValidationError[],
+    private readonly initialMessage = 'Schema validation failed',
+  ) {
+    super();
+  }
+
+  get message() {
+    return `${this.initialMessage}\nJSON: ${
+      JSON.stringify(this.json, null, 2)
+    }\nValidation errors:${this.validationMessage}`;
+  }
+
+  get validationMessage() {
+    const max = SchemaAssertionError.maxErrorsPerMessage;
+    return this.validationErrors.slice(0, max).map((e) =>
+      validationErrorToString(e) +
+      (e.children?.length
+        ? e.children.slice(0, max).map((es) =>
+          '- ' + es.slice(0, max).map(validationErrorToString).join('\n  ') +
+          (es.length > max ? `\n  (...and ${es.length - max} more)` : '')
+        ).join('\n') +
+          (e.children.length > max ? `\n- (...and ${e.children.length - max} more)` : '')
+        : '')
+    ).join('\n') + (this.validationErrors.length > max
+      ? `\n(...and ${this.validationErrors.length - max} more)`
+      : '');
+  }
+}
+
+function validateSchemaType<
   S extends SchemaType,
   Refs extends { readonly [key: string]: SchemaType },
->(schema: S, refs: RefMatchers<Refs>): (value: unknown) => boolean {
+>(schema: S, refs: RefValidators<Refs>, schemaPath: PathArray = []): Validator {
   if (schema === null) {
-    return (value) => value === null;
+    return (value, dataPath) =>
+      value === null ? [] : [{ dataPath, schemaPath, message: 'expected null' }];
   } else if (Array.isArray(schema)) {
     switch (schema[0]) {
       case 'enum':
-        return (value) => {
+        return (value, dataPath) => {
           for (let i = 1; i < schema.length; i++) {
             if (value === schema[i]) {
-              return true;
+              return [];
             }
           }
-          return false;
+          return [{
+            dataPath,
+            schemaPath,
+            message: schema.length === 2
+              ? 'expected the exact value ' + JSON.stringify(schema[1])
+              : `expected one of ${
+                (schema.slice(1) as SchemaType[]).map((x) => JSON.stringify(x)).join(', ')
+              }`,
+          }];
         };
       case 'tuple': {
-        const predicates = (schema.slice(1) as SchemaType[]).map((e) => matchesSchemaType(e, refs));
-        return (value) => {
-          if (!Array.isArray(value) || value.length !== predicates.length) {
-            return false;
+        const predicates = (schema.slice(1) as SchemaType[]).map((e, i) =>
+          validateSchemaType(e, refs, [...schemaPath, i + 1])
+        );
+        return (value, dataPath) => {
+          if (!Array.isArray(value)) {
+            return [{ dataPath, schemaPath, message: 'expected array' }];
+          } else if (value.length !== predicates.length) {
+            return [{
+              dataPath,
+              schemaPath,
+              message: `expected array of exactly ${predicates.length} values, got ${value.length}`,
+            }];
           }
-          for (let i = 0; i < value.length; i++) {
-            if (!predicates[i](value[i])) {
-              return false;
-            }
-          }
-          return true;
+          return value.flatMap((v, i) => predicates[i](v, [...dataPath, i]));
         };
       }
       case 'array': {
         if (schema.length === 2) {
-          const e = matchesSchemaType(schema[1], refs);
-          return (value) => Array.isArray(value) && value.every(e);
+          const e = validateSchemaType(schema[1], refs, [...schemaPath, 1]);
+          return (value, dataPath) => {
+            if (!Array.isArray(value)) {
+              return [{ dataPath, schemaPath, message: 'expected array' }];
+            }
+            return value.flatMap((v, i) => e(v, [...dataPath, i]));
+          };
         } else {
-          const predicates = (schema.slice(1) as SchemaType[]).map((e) =>
-            matchesSchemaType(e, refs)
+          const predicates = (schema.slice(1) as SchemaType[]).map((e, i) =>
+            validateSchemaType(e, refs, [...schemaPath, i + 1])
           );
-          return (value) => {
-            if (!Array.isArray(value) || value.length < predicates.length - 1) {
-              return false;
+          return (value, dataPath) => {
+            if (!Array.isArray(value)) {
+              return [{ dataPath, schemaPath, message: 'expected array' }];
+            } else if (value.length < predicates.length - 1) {
+              return [{
+                dataPath,
+                schemaPath,
+                message: `expected array of at least ${
+                  predicates.length - 1
+                } values, got ${value.length}`,
+              }];
             }
-            for (let i = 0; i < value.length; i++) {
-              if (
-                !predicates[
-                  i < predicates.length - 1 ? i : predicates.length - 1
-                ](value[i])
-              ) {
-                return false;
-              }
-            }
-            return true;
+            return value.flatMap((v, i) =>
+              predicates[
+                i < predicates.length - 1 ? i : predicates.length - 1
+              ](v, [...dataPath, i])
+            );
           };
         }
       }
       case 'dictionary': {
-        const e = matchesSchemaType(schema[1], refs);
-        return (value) => isPlainObject(value) && Object.values(value).every(e);
+        const e = validateSchemaType(schema[1], refs, [...schemaPath, 1]);
+        return (value, dataPath) => {
+          if (!isPlainObject(value)) {
+            return [{ dataPath, schemaPath, message: 'expected object' }];
+          }
+          return Object.entries(value).flatMap(([k, v]) => e(v, [...dataPath, k]));
+        };
       }
       case 'oneof': {
-        const predicates = (schema.slice(1) as SchemaType[]).map((e) => matchesSchemaType(e, refs));
-        return (value) => predicates.some((p) => p(value));
+        const predicates = (schema.slice(1) as SchemaType[]).map((e, i) =>
+          validateSchemaType(e, refs, [...schemaPath, i + 1])
+        );
+        return (value, dataPath) => {
+          const children: ValidationError[][] = [];
+          for (const p of predicates) {
+            const errors = p(value, dataPath);
+            if (!errors.length) return [];
+            children.push(errors);
+          }
+          return [{
+            dataPath,
+            schemaPath,
+            message: `all ${predicates.length} options failed`,
+            children,
+          }];
+        };
       }
       case 'ref':
-        return (value) => refs[schema[1]](value);
+        // Can't use refs[schema[1]] directly because of recursion
+        return (value, dataPath) =>
+          refs[schema[1]]?.(value, dataPath) ?? [{
+            dataPath,
+            schemaPath,
+            message: `broken ref: schema has no let definition named ${JSON.stringify(schema[1])}`,
+          }];
     }
   } else if (isPlainObject(schema)) {
     const predicates = Object.entries(schema).map(([k, v]) => {
       const isOptional = Array.isArray(v) && v[0] === 'optional';
-      const predicate = matchesSchemaType(isOptional ? v[1] : v, refs);
-      return (value: Record<string, unknown>) =>
-        k in value ? predicate(value[k as keyof typeof value]) : isOptional;
+      const predicate = validateSchemaType(isOptional ? v[1] : v, refs, [
+        ...schemaPath,
+        k,
+        ...isOptional ? [1] : [],
+      ]);
+      return (value: Record<string, unknown>, dataPath: PathArray) =>
+        k in value
+          ? predicate(value[k as keyof typeof value], [...dataPath, k])
+          : (isOptional
+            ? []
+            : [{ dataPath, schemaPath, message: `missing required field ${JSON.stringify(k)}` }]);
     });
-    return (value) => isPlainObject(value) && predicates.every((p) => p(value));
+    return (value, dataPath) => {
+      if (!isPlainObject(value)) {
+        return [{ dataPath, schemaPath, message: 'expected object' }];
+      }
+      return predicates.flatMap((p) => p(value, dataPath));
+    };
   } else {
     switch (schema) {
       case 'null':
-        return (value) => value === null;
+        return (value, dataPath) =>
+          value === null ? [] : [{ dataPath, schemaPath, message: 'expected null' }];
       case 'boolean':
-        return (value) => typeof value === 'boolean';
+        return (value, dataPath) =>
+          typeof value === 'boolean' ? [] : [{ dataPath, schemaPath, message: 'expected boolean' }];
       case 'float':
       case 'number':
-        return (value) => typeof value === 'number';
+        return (value, dataPath) =>
+          typeof value === 'number' ? [] : [{ dataPath, schemaPath, message: 'expected number' }];
       case 'integer':
-        return (value) => typeof value === 'number' && Number.isInteger(value);
+        return (value, dataPath) =>
+          typeof value === 'number' && Number.isInteger(value)
+            ? []
+            : [{ dataPath, schemaPath, message: 'expected integer' }];
       case 'string':
-        return (value) => typeof value === 'string';
+        return (value, dataPath) =>
+          typeof value === 'string' ? [] : [{ dataPath, schemaPath, message: 'expected string' }];
       case 'date':
-        return (value) => value instanceof Date;
+        return (value, dataPath) =>
+          value instanceof Date ? [] : [{ dataPath, schemaPath, message: 'expected date' }];
       case 'binary':
-        return (value) => ArrayBuffer.isView(value);
+        return (value, dataPath) =>
+          ArrayBuffer.isView(value) ? [] : [{ dataPath, schemaPath, message: 'expected binary' }];
     }
   }
-  return () => false;
+  return (_, dataPath) => [{ dataPath, schemaPath, message: 'bad schema' }];
 }
 
 /**
@@ -720,18 +842,54 @@ function matchesSchemaType<
  * If `schema` is statically known at typechecking type (defined with
  * `as const`), then the function returned by `matchesSchema(schema)` will be a
  * type predicate.
+ *
+ * `errors` is a mutable array of `{ dataPath, schemaPath, message, children? }`
+ * objects. If it is present and `matchesSchema` returns false, it will be
+ * populated with a list of validation errors.
  */
 export function matchesSchema<S extends Schema>({
   schema,
   let: refs = {},
-}: S): (value: unknown) => value is MatchesSchema<S> {
-  const refPredicates: { [key: string]: (value: unknown) => boolean } = {};
+}: S): (value: unknown, errors?: ValidationError[]) => value is MatchesSchema<S> {
+  const refValidators: { [key: string]: Validator } = {};
   for (const [k, v] of Object.entries(refs)) {
-    refPredicates[k] = matchesSchemaType(v, refPredicates);
+    refValidators[k] = validateSchemaType(v, refValidators, ['let', k]);
   }
-  return matchesSchemaType(schema, refPredicates) as (
-    value: unknown,
-  ) => value is MatchesSchema<S>;
+  const validator = validateSchemaType(schema, refValidators, ['schema']);
+  return (value, errors?): value is MatchesSchema<S> => {
+    const result = validator(value, []);
+    if (result.length) {
+      if (errors != null) errors.push(...result);
+      return false;
+    }
+    return true;
+  };
+}
+
+/**
+ * A curried function that checks whether `value` matches `schema` and throws
+ * a [[SchemaAssertionError]] if it doesn't.
+ *
+ * If `schema` is statically known at typechecking type (defined with
+ * `as const`), then the function returned by `assertMatchesSchema(schema)` will
+ * be a type assertion function.
+ *
+ * `message` is an optional message string to include in the thrown error.
+ */
+export function assertMatchesSchema<S extends Schema>(
+  schema: S,
+): (value: unknown, message?: string) => asserts value is MatchesSchema<S> {
+  const refValidators: { [key: string]: Validator } = {};
+  for (const [k, v] of Object.entries(schema.let ?? {})) {
+    refValidators[k] = validateSchemaType(v, refValidators, ['let', k]);
+  }
+  const validator = validateSchemaType(schema.schema, refValidators, ['schema']);
+  return (value, message?): asserts value is MatchesSchema<S> => {
+    const result = validator(value, []);
+    if (result.length) {
+      throw new SchemaAssertionError(value, schema, result, message);
+    }
+  };
 }
 
 function typeZeroValue(

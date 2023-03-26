@@ -1,5 +1,5 @@
 // Spartan Schema
-// Copyright © 2021-2022 Adam Nelson <adam@nels.onl>
+// Copyright © 2021-2023 Adam Nelson <adam@nels.onl>
 // Distributed under the Blue Oak Model License
 
 /**

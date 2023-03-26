@@ -1,6 +1,6 @@
 .PHONY: all npm check test clean
 
-VERSION=1.0.1
+VERSION=1.1.0
 
 all: npm
 npm: test

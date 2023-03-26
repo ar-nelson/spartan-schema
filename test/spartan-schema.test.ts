@@ -1,5 +1,6 @@
 import { describe, it } from 'https://deno.land/x/deno_mocha/mod.ts';
 import { expect } from 'https://deno.land/x/expect/mod.ts';
+import { assertArrayIncludes } from 'https://deno.land/std@0.178.0/testing/asserts.ts';
 import {
   isSchema,
   MatchesSchema,
@@ -7,6 +8,7 @@ import {
   PathArray,
   Schema,
   SchemaError,
+  ValidationError,
   zeroValue,
 } from '../mod.ts';
 
@@ -115,8 +117,11 @@ function expectToMatch<S extends Schema>(
   return (value: MatchesSchema<S>) => expect(matchesSchema(schema)(value)).toBe(true);
 }
 
-function expectNotToMatch(schema: Schema, value: unknown): void {
-  expect(matchesSchema(schema)(value)).toBe(false);
+function expectNotToMatch(schema: Schema, value: unknown, errors: ValidationError[]): void {
+  const actualErrors: ValidationError[] = [];
+  expect(matchesSchema(schema)(value, actualErrors)).toBe(false);
+  assertArrayIncludes(actualErrors, errors);
+  assertArrayIncludes(errors, actualErrors);
 }
 
 describe('Spartan Schema', () => {
@@ -135,17 +140,25 @@ describe('Spartan Schema', () => {
       });
     });
     it('doesn\'t match missing keys', () => {
-      expectNotToMatch(personSchema, { firstName: 'Adam', lastName: 'Nelson' });
+      expectNotToMatch(personSchema, { firstName: 'Adam', lastName: 'Nelson' }, [
+        { dataPath: [], schemaPath: ['schema'], message: 'missing required field "age"' },
+      ]);
     });
     it('doesn\'t match key type mismatch', () => {
       expectNotToMatch(personSchema, {
         firstName: 'Adam',
         lastName: 'Nelson',
         age: null,
-      });
+      }, [{
+        dataPath: ['age'],
+        schemaPath: ['schema', 'age'],
+        message: 'expected integer',
+      }]);
     });
     it('doesn\'t match an array', () => {
-      expectNotToMatch(personSchema, ['Adam', 'Nelson', 31]);
+      expectNotToMatch(personSchema, ['Adam', 'Nelson', 31], [
+        { dataPath: [], schemaPath: ['schema'], message: 'expected object' },
+      ]);
     });
     it('has a zero value', () => {
       expect(zeroValue(personSchema)).toEqual({
@@ -172,10 +185,19 @@ describe('Spartan Schema', () => {
       expectToMatch(pathSchema)([1, 2, 'd']);
     });
     it('doesn\'t match paths with floats, infinity, or NaN', () => {
-      expectNotToMatch(pathSchema, [1.1]);
-      expectNotToMatch(pathSchema, [Infinity]);
-      expectNotToMatch(pathSchema, [-Infinity]);
-      expectNotToMatch(pathSchema, [NaN]);
+      const failure = {
+        dataPath: [0],
+        schemaPath: ['schema', 1],
+        message: 'all 2 options failed',
+        children: [
+          [{ dataPath: [0], schemaPath: ['schema', 1, 1], message: 'expected string' }],
+          [{ dataPath: [0], schemaPath: ['schema', 1, 2], message: 'expected integer' }],
+        ],
+      };
+      expectNotToMatch(pathSchema, [1.1], [failure]);
+      expectNotToMatch(pathSchema, [Infinity], [failure]);
+      expectNotToMatch(pathSchema, [-Infinity], [failure]);
+      expectNotToMatch(pathSchema, [NaN], [failure]);
     });
     it('has a zero value', () => {
       expect(zeroValue(pathSchema)).toEqual([]);
@@ -195,7 +217,11 @@ describe('Spartan Schema', () => {
       expectToMatch(stoplightSchema)({ stoplight: 'green' });
     });
     it('doesn\'t match unspecified values', () => {
-      expectNotToMatch(stoplightSchema, { stoplight: 'blue' });
+      expectNotToMatch(stoplightSchema, { stoplight: 'blue' }, [{
+        dataPath: ['stoplight'],
+        schemaPath: ['schema', 'stoplight'],
+        message: 'expected one of "red", "yellow", "green"',
+      }]);
     });
     it('has a zero value', () => {
       expect(zeroValue(stoplightSchema)).toEqual({ stoplight: 'red' });
@@ -227,43 +253,55 @@ describe('Spartan Schema', () => {
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         null1: true,
-      });
+      }, [{ dataPath: ['null1'], schemaPath: ['schema', 'null1'], message: 'expected null' }]);
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         null2: true,
-      });
+      }, [{ dataPath: ['null2'], schemaPath: ['schema', 'null2'], message: 'expected null' }]);
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         boolean: 'true',
-      });
+      }, [{
+        dataPath: ['boolean'],
+        schemaPath: ['schema', 'boolean'],
+        message: 'expected boolean',
+      }]);
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         integer: 1.5,
-      });
+      }, [{
+        dataPath: ['integer'],
+        schemaPath: ['schema', 'integer'],
+        message: 'expected integer',
+      }]);
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         integer: '1',
-      });
+      }, [{
+        dataPath: ['integer'],
+        schemaPath: ['schema', 'integer'],
+        message: 'expected integer',
+      }]);
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         float1: '1',
-      });
+      }, [{ dataPath: ['float1'], schemaPath: ['schema', 'float1'], message: 'expected number' }]);
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         float2: '1',
-      });
+      }, [{ dataPath: ['float2'], schemaPath: ['schema', 'float2'], message: 'expected number' }]);
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         string: true,
-      });
+      }, [{ dataPath: ['string'], schemaPath: ['schema', 'string'], message: 'expected string' }]);
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         date: {},
-      });
+      }, [{ dataPath: ['date'], schemaPath: ['schema', 'date'], message: 'expected date' }]);
       expectNotToMatch(primitivesSchema, {
         ...matchingObject,
         binary: [],
-      });
+      }, [{ dataPath: ['binary'], schemaPath: ['schema', 'binary'], message: 'expected binary' }]);
     });
     it('has a zero value', () => {
       expect(zeroValue(primitivesSchema)).toEqual({
