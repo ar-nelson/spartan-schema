@@ -102,7 +102,7 @@ imported directly:
 import {
   Schema,
   matchesSchema
-} from 'https://deno.land/x/spartanschema/v1.1.0/mod.ts';
+} from 'https://deno.land/x/spartanschema/mod.ts';
 ```
 
 The Node module is built with [`dnt`][dnt], and is available on NPM as
