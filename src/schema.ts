@@ -643,7 +643,7 @@ export function validationErrorToString(
 }
 
 /**
- * A detailed error thrown by [[assertMatchesSchema]] when schema validation
+ * A detailed error thrown by `assertMatchesSchema` when schema validation
  * fails. Includes the schema, the JSON that didn't match, and the list of
  * validation errors, complete with JSONPath locations in both the schema and
  * the JSON value.
@@ -874,7 +874,7 @@ export function matchesSchema<S extends Schema>({
 
 /**
  * A curried function that checks whether `value` matches `schema` and throws
- * a [[SchemaAssertionError]] if it doesn't.
+ * a `SchemaAssertionError` if it doesn't.
  *
  * If `schema` is statically known at typechecking type (defined with
  * `as const`), then the function returned by `assertMatchesSchema(schema)` will
