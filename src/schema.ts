@@ -625,8 +625,21 @@ export interface ValidationError {
   children?: ValidationError[][];
 }
 
-export function validationErrorToString({ dataPath, schemaPath, message }: ValidationError) {
-  return `${pathToString(dataPath)}: ${message} (rule ${pathToString(schemaPath)})`;
+export function validationErrorToString(
+  { dataPath, schemaPath, message, children }: ValidationError,
+  maxLength = 8,
+  maxDepth = 4,
+): string {
+  return `${pathToString(dataPath)}: ${message} (rule ${pathToString(schemaPath)})${
+    maxDepth && children?.length
+      ? children.slice(0, maxLength).map((cs) =>
+        '\n- ' + cs.slice(0, maxLength).map((c) =>
+          validationErrorToString(c, maxLength, maxDepth - 1).replaceAll('\n', '\n  ')
+        ).join('\n  ') + (cs.length > maxLength ? `\n  (...and ${cs.length - maxLength} more)` : '')
+      ).join('') +
+        (children.length > maxLength ? `\n- (...and ${children.length - maxLength} more)` : '')
+      : ''
+  }`;
 }
 
 /**
@@ -650,21 +663,14 @@ export class SchemaAssertionError extends Error {
   get message() {
     return `${this.initialMessage}\nJSON: ${
       JSON.stringify(this.json, null, 2)
-    }\nValidation errors:${this.validationMessage}`;
+    }\nValidation errors:\n${this.validationMessage}`;
   }
 
   get validationMessage() {
     const max = SchemaAssertionError.maxErrorsPerMessage;
-    return this.validationErrors.slice(0, max).map((e) =>
-      validationErrorToString(e) +
-      (e.children?.length
-        ? e.children.slice(0, max).map((es) =>
-          '- ' + es.slice(0, max).map(validationErrorToString).join('\n  ') +
-          (es.length > max ? `\n  (...and ${es.length - max} more)` : '')
-        ).join('\n') +
-          (e.children.length > max ? `\n- (...and ${e.children.length - max} more)` : '')
-        : '')
-    ).join('\n') + (this.validationErrors.length > max
+    return this.validationErrors.slice(0, max).map((e) => validationErrorToString(e, max, 4)).join(
+      '\n',
+    ) + (this.validationErrors.length > max
       ? `\n(...and ${this.validationErrors.length - max} more)`
       : '');
   }
